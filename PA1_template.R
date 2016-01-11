@@ -1,99 +1,72 @@
----
-title: "FitnessMonitorAnalysis"
-author: "NishaK"
-date: "9 January 2016"
-output: 
-  html_document:
-    keep_md: true
----
-
-The aim is to analyze data of a personal activity device collected at a period of 2 months at 5 day interval 
-
 ###Importing the data
-This part of the code will import the raw data and remove records missing values
-```{r,echo=TRUE}
-mdatatotal<-read.csv("C:/Users/tittyni/Misc/DataScience/Reproducible Research/RepData_PeerAssessment1/activity.csv")
+mdatatotal<-read.csv("D:/#GoogleDrive/#Nisha/Coursera - DataScience/Reproducible Research/Assignment1/activity.csv")
+head(mdatatotal)
+summary(mdatatotal)
 mdata<-subset(mdatatotal,!is.na(mdatatotal$steps))
-```
+head(mdata)
 
 ###Histogram of the total number of steps taken each day, mean and median number of steps taken each day
-
-The code below will create a total of no. of steps walked per day and a histogram that plots the same.
-```{r,echo==TRUE}
 StepsPerDay<-aggregate(mdata$steps~mdata$date,mdata,sum)
-library("ggplot2")
-qplot(StepsPerDay$`mdata$steps`,geom = "histogram",main="Distribution of steps walked each day"
-      ,xlab="No. of steps per day",ylab="Frequency of days",col=I("blue"),fill=I("Green"))
-```
+StepsPerDay<-data.frame(StepsPerDay)
+head(StepsPerDay)
+names(StepsPerDay)[names(StepsPerDay)=="mdata.date"] <- "Date"
+names(StepsPerDay)[names(StepsPerDay)=="mdata.steps"] <- "TotalSteps"
 
-Below code shows a set of 10 values of mean and median of total no. of steps taken per day per day
-```{r}
-StepsCount_Mean<-aggregate(StepsPerDay$`mdata$steps`~StepsPerDay$`mdata$date`,StepsPerDay,mean)
+library("ggplot2")
+qplot(StepsPerDay$TotalSteps,geom = "histogram",main="Distibution of steps walked each day"
+      ,xlab="No. of steps per day",ylab="Frequency of days",col=I("blue"),fill=I("Green"))
+
+###Below code shows a set of 10 values of mean and median of total no. of steps taken per day per day
+StepsCount_Mean<-aggregate(StepsPerDay$Steps~StepsPerDay$Date,StepsPerDay,mean)
 StepsCount_Median<-aggregate(StepsPerDay$`mdata$steps`~StepsPerDay$`mdata$date`,StepsPerDay,median)
 head(StepsCount_Mean,10)
 head(StepsCount_Median,10)
-```
 
 ###Time series plot of the average number of steps taken
-
-The code and plot below show distribution of average no. of steps taken with respect to interval.
-```{r}
 DailyMean<-aggregate(mdata$steps~mdata$interval,mdata,mean)
 DailyMean<-data.frame(DailyMean)
+head(DailyMean)
 names(DailyMean)[names(DailyMean)=="mdata.interval"] <- "Interval"
 names(DailyMean)[names(DailyMean)=="mdata.steps"] <- "MeanOfSteps"
 ggplot(DailyMean, aes(Interval, MeanOfSteps)) + geom_line() + xlab("Intervals") + ylab("No. of steps") +
   ggtitle("Time series distribution")
-```
 
-This code will show the entry that has highest of average steps taken
-```{r}
+###This code will show the entry that has highest of average steps taken
 MaxOfSteps<-subset(DailyMean,DailyMean$MeanOfSteps==max(DailyMean$MeanOfSteps))
-names(MaxOfSteps)[names(MaxOfSteps)=="MeanOfSteps"] <- "MaxOfAverageSteps"
 MaxOfSteps
-```
 
-###Code to describe and show a strategy for imputing missing data
-Total data missing regarding no. of steps
-```{r}
+###Total data missing regarding no. of steps
 sum(is.na(mdatatotal$steps))
-```
 
-Lets calculate mean value of steps column, create a new data set equivalent to original and replace it with missing values 
-```{r}
+###Lets replace missing values with mean value of steps column
 newmdatatotal<-mdatatotal
+head(newmdatatotal)
 a<-is.na(newmdatatotal$steps)
 avgdata<- tapply(newmdatatotal$steps, newmdatatotal$interval, mean, na.rm=TRUE, simplify=TRUE)
 newmdatatotal$steps[a] <- avgdata
-```
-###Histogram of the total number of steps taken each day after missing values are imputed
-```{r}
+head(newmdatatotal)
+
 StepsPerDay1<-aggregate(newmdatatotal$steps~newmdatatotal$date,newmdatatotal,sum)
 StepsPerDay1<-data.frame(StepsPerDay1)
+head(StepsPerDay1)
 names(StepsPerDay1)[names(StepsPerDay1)=="newmdatatotal.date"] <- "Date"
 names(StepsPerDay1)[names(StepsPerDay1)=="newmdatatotal.steps"] <- "TotalSteps"
 
-qplot(StepsPerDay1$TotalSteps,geom = "histogram",main="Distibution of steps walked each day (with imputed values)"
+qplot(StepsPerDay1$TotalSteps,geom = "histogram",main="Distibution of steps walked each day"
       ,xlab="No. of steps per day",ylab="Frequency of days",col=I("blue"),fill=I("Green"))
-```
 
-Code and result showing mean and median steps taken per day
-```{r}
+####Mean and median of new data
 mean(StepsPerDay1$TotalSteps)
 median(StepsPerDay1$TotalSteps)
-```
 
-Code to create factor variable of categories weekdays and weekend
-```{r}
+###Create factor variable for weekdays and weekend
 newmdatatotal$date<-as.Date(as.character(newmdatatotal$date))
 newmdatatotal$day<-weekdays(newmdatatotal$date)
 newmdatatotal$weekday<- as.factor(c("weekend", "weekday"))
 newmdatatotal[newmdatatotal$day == "Sunday" | newmdatatotal$day == "Saturday" ,5]<- factor("weekend")
 newmdatatotal[!(newmdatatotal$day == "Sunday" | newmdatatotal$day == "Saturday"),5 ]<- factor("weekday")
-```
+
 ###Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
-```{r}
 library(lattice)
 interval <- aggregate(steps ~ interval + weekday, newmdatatotal, mean)
 xyplot(steps ~ interval | weekday, data=interval, layout=c(1,2), type='l')
-```
